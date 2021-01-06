@@ -496,7 +496,7 @@ iperf_udp_connect(struct iperf_test *test)
 #ifdef SO_RCVTIMEO
     struct timeval tv;
 #endif
-    int rc;
+    int rc, opt;
 
     /* Create and bind our local socket. */
     if ((s = netdial(test->settings->domain, Pudp, test->bind_address, test->bind_dev, test->bind_port, test->server_hostname, test->server_port, -1)) < 0) {
@@ -547,6 +547,26 @@ iperf_udp_connect(struct iperf_test *test)
 		printf("Setting application pacing to %u\n", rate);
 	    }
 	}
+    }
+
+    /* Set IP TOS */
+    if ((opt = test->settings->tos)) {
+        if (getsockdomain(s) == AF_INET6) {
+#ifdef IPV6_TCLASS
+            if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &opt, sizeof(opt)) < 0) {
+                i_errno = IESETCOS;
+                return -1;
+            }
+#else
+            i_errno = IESETCOS;
+            return -1;
+#endif
+        } else {
+            if (setsockopt(s, IPPROTO_IP, IP_TOS, &opt, sizeof(opt)) < 0) {
+                i_errno = IESETTOS;
+                return -1;
+            }
+        }
     }
 
 #ifdef SO_RCVTIMEO
