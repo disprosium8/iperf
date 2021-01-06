@@ -4024,7 +4024,7 @@ iperf_init_stream(struct iperf_stream *sp, struct iperf_test *test)
 	    /* RFC4291 ::ffff:xxx:xxx */
 	    sa_in6P = (struct sockaddr_in6 *) &sp->local_addr;
 	    if (! (*(uint64_t*)(sa_in6P->sin6_addr.s6_addr)) &&
-		( (*(uint64_t*)(sa_in6P->sin6_addr.s6_addr+8)) & 0x00000000ffff0000)) {
+		( (*(uint32_t*)(sa_in6P->sin6_addr.s6_addr+8)) == 0xffff0000)) {
 		if (setsockopt(sp->socket, IPPROTO_IP, IP_TOS, &opt, sizeof(opt)) < 0) {
 		    /* ignore any failure of v4 TOS in IPv6 case */
 		}
