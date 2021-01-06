@@ -3996,6 +3996,7 @@ iperf_new_stream(struct iperf_test *test, int s, int sender)
 int
 iperf_init_stream(struct iperf_stream *sp, struct iperf_test *test)
 {
+    struct sockaddr_in6 *sa_in6P;
     socklen_t len;
     int opt;
 
@@ -4014,10 +4015,20 @@ iperf_init_stream(struct iperf_stream *sp, struct iperf_test *test)
     if ((opt = test->settings->tos)) {
         if (getsockdomain(sp->socket) == AF_INET6) {
 #ifdef IPV6_TCLASS
-            if (setsockopt(sp->socket, IPPROTO_IPV6, IPV6_TCLASS, &opt, sizeof(opt)) < 0) {
+	    if (setsockopt(sp->socket, IPPROTO_IPV6, IPV6_TCLASS, &opt, sizeof(opt)) < 0) {
                 i_errno = IESETCOS;
                 return -1;
             }
+
+	    /* Check if we are an IPv4 mapped address and set IP_TOS */
+	    /* RFC4291 ::ffff:xxx:xxx */
+	    sa_in6P = (struct sockaddr_in6 *) &sp->local_addr;
+	    if (! (*(uint64_t*)(sa_in6P->sin6_addr.s6_addr)) &&
+		( (*(uint64_t*)(sa_in6P->sin6_addr.s6_addr+8)) & 0x00000000ffff0000)) {
+		if (setsockopt(sp->socket, IPPROTO_IP, IP_TOS, &opt, sizeof(opt)) < 0) {
+		    /* ignore any failure of v4 TOS in IPv6 case */
+		}
+	    }
 #else
             i_errno = IESETCOS;
             return -1;
