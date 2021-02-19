@@ -620,6 +620,9 @@ iperf_run_server(struct iperf_test *test)
 		    }
 #endif /* HAVE_TCP_CONGESTION */
 
+		    /* apply other common socket options */
+		    iperf_common_sockopts(test, s);
+
                     if (!is_closed(s)) {
 
                         if (rec_streams_accepted != streams_to_rec) {
